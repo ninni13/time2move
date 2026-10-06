@@ -1,0 +1,1519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#f2efef" />
+  <meta name="color-scheme" content="light" />
+  <title>time2move</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg: #f2efef;
+      --surface: #fffdfc;
+      --soft: #f7ecee;
+      --pink: #c9858d;
+      --pink-dark: #9f626b;
+      --pink-light: #ecd2d5;
+      --text: #3f3938;
+      --muted: #7b7270;
+      --line: #e7dcda;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      background: #f2efef !important;
+      color-scheme: light;
+    }
+
+    body {
+      font-family: "Cormorant Garamond", Georgia, "Times New Roman", serif;
+      background: var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    button {
+      font: inherit;
+    }
+
+    button:focus-visible {
+      outline: 3px solid rgba(201, 133, 141, .25);
+      outline-offset: 3px;
+    }
+
+    .page {
+      width: min(1120px, calc(100% - 36px));
+      height: 100dvh;
+      margin: 0 auto;
+      padding: 18px 0 12px;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      gap: 10px;
+    }
+
+    header {
+      text-align: center;
+    }
+
+    .brand {
+      margin: 0;
+      font-size: clamp(2.25rem, 4.8vw, 3.7rem);
+      line-height: .95;
+      letter-spacing: -.045em;
+      font-weight: 400;
+    }
+
+    .brand .two {
+      color: var(--pink);
+      font-style: italic;
+    }
+
+    .tagline {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 1rem;
+      font-style: italic;
+    }
+
+    .prompt {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 10px;
+      color: var(--pink-dark);
+      font-size: .86rem;
+      font-weight: 400;
+    }
+
+    .prompt-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--pink);
+    }
+
+    .app-shell {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 1fr;
+      align-items: stretch;
+    }
+
+    .app-shell.has-selection {
+      grid-template-columns: minmax(330px, .88fr) minmax(430px, 1.12fr);
+      gap: 44px;
+    }
+
+    .body-panel {
+      min-width: 0;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      padding: 4px 0 0;
+    }
+
+    .view-switcher {
+      display: inline-flex;
+      align-self: center;
+      gap: 18px;
+      flex: 0 0 auto;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .view-btn {
+      position: relative;
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      padding: 6px 2px 8px;
+      cursor: pointer;
+      font-size: .92rem;
+      font-weight: 400;
+    }
+
+    .view-btn::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: -1px;
+      height: 2px;
+      background: transparent;
+    }
+
+    .view-btn.active {
+      color: var(--pink-dark);
+    }
+
+    .view-btn.active::after {
+      background: var(--pink);
+    }
+
+    .body-stage {
+      min-height: 0;
+      flex: 1;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      padding: 0;
+    }
+
+    .body-view {
+      display: none;
+      width: 100%;
+      height: 100%;
+      min-height: 330px;
+      max-height: 500px;
+    }
+
+    .body-view.active {
+      display: block;
+    }
+
+    .body-svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+      overflow: visible;
+    }
+
+    .stick-head {
+      fill: none;
+      stroke: #8d8382;
+      stroke-width: 4;
+    }
+
+    .stick-line {
+      fill: none;
+      stroke: #8d8382;
+      stroke-width: 5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .stick-soft {
+      fill: none;
+      stroke: #d7cbca;
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      stroke-dasharray: 3 6;
+    }
+
+    .hotspot {
+      cursor: pointer;
+      outline: none;
+    }
+
+    .hotspot .pulse {
+      fill: rgba(201, 133, 141, .14);
+      transform-origin: center;
+      transition: transform 140ms ease, fill 140ms ease;
+    }
+
+    .hotspot .dot {
+      fill: var(--pink);
+      stroke: var(--bg);
+      stroke-width: 3.5;
+      transition: transform 140ms ease, fill 140ms ease;
+      transform-box: fill-box;
+      transform-origin: center;
+    }
+
+    .hotspot .label-box,
+    .hotspot .label-text {
+      opacity: 0;
+      transform: translateY(4px);
+      transition: opacity 140ms ease, transform 140ms ease;
+      pointer-events: none;
+    }
+
+    .hotspot .label-box {
+      fill: #4a4041;
+    }
+
+    .hotspot .label-text {
+      fill: #fff;
+      font-size: 13px;
+      font-weight: 400;
+      text-anchor: middle;
+      font-family: "Cormorant Garamond", Georgia, "Times New Roman", serif;
+    }
+
+    .hotspot:hover .pulse,
+    .hotspot:focus .pulse,
+    .hotspot.selected .pulse {
+      fill: rgba(201, 133, 141, .23);
+      transform: scale(1.18);
+    }
+
+    .hotspot:hover .dot,
+    .hotspot:focus .dot,
+    .hotspot.selected .dot {
+      fill: var(--pink-dark);
+      transform: scale(1.18);
+    }
+
+    .hotspot:hover .label-box,
+    .hotspot:focus .label-box,
+    .hotspot:hover .label-text,
+    .hotspot:focus .label-text {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .selection-hint {
+      margin: 5px 0 0;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.9rem;
+      font-style: italic;
+      line-height: 1.2;
+    }
+
+    .stretch-panel {
+      min-width: 0;
+      min-height: 0;
+      display: none;
+      padding: 18px 0 10px 38px;
+      border-left: 1px solid var(--line);
+      overflow: hidden;
+    }
+
+    .stretch-panel.visible {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .stretch-topline {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .eyebrow {
+      color: var(--pink-dark);
+      font-size: .72rem;
+      font-weight: 400;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      font-family: "Cormorant Garamond", Georgia, "Times New Roman", serif;
+    }
+
+    .area-title {
+      margin: 5px 0 0;
+      font-size: clamp(1.6rem, 2.8vw, 2.2rem);
+      line-height: 1;
+      letter-spacing: -.025em;
+      font-weight: 400;
+    }
+
+    .progress-pill {
+      flex: 0 0 auto;
+      color: var(--pink-dark);
+      font-size: .83rem;
+      font-style: italic;
+      padding-top: 4px;
+    }
+
+    .rule {
+      height: 1px;
+      background: var(--line);
+      margin: 14px 0 17px;
+    }
+
+    .stretch-name {
+      margin: 0;
+      font-size: clamp(1.55rem, 3vw, 2.15rem);
+      line-height: 1.05;
+      letter-spacing: -.025em;
+      font-weight: 400;
+    }
+
+    .instruction {
+      margin: 11px 0 12px;
+      color: var(--muted);
+      line-height: 1.5;
+      font-size: .95rem;
+      max-width: 54ch;
+    }
+
+    .duration-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      color: var(--pink-dark);
+      font-size: .88rem;
+      font-style: italic;
+    }
+
+    .duration-icon {
+      width: 7px;
+      height: 7px;
+      border: 2px solid var(--pink);
+      border-radius: 50%;
+    }
+
+    .timer-section {
+      margin: 18px 0 15px;
+      padding: 0 0 16px;
+      border-bottom: 1px solid var(--line);
+      display: grid;
+      grid-template-columns: 150px 1fr;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .timer-meta {
+      text-align: left;
+    }
+
+    .timer-caption {
+      margin: 0 0 2px;
+      color: var(--muted);
+      font-size: .78rem;
+      font-style: italic;
+    }
+
+    .timer {
+      margin: 0;
+      font-size: clamp(3.5rem, 7vw, 5.2rem);
+      line-height: .9;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -.055em;
+      color: var(--pink-dark);
+      font-weight: 400;
+    }
+
+    .seconds {
+      display: block;
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: .68rem;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+
+    .completion-message {
+      min-height: 24px;
+      color: var(--pink-dark);
+      font-weight: 400;
+      font-size: 1rem;
+      font-style: italic;
+      display: flex;
+      align-items: center;
+    }
+
+    .timer-controls,
+    .nav-controls {
+      display: grid;
+      gap: 8px;
+    }
+
+    .timer-controls {
+      grid-template-columns: repeat(3, 1fr);
+      margin-bottom: 8px;
+    }
+
+    .nav-controls {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .btn {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      min-height: 39px;
+      padding: 8px 14px;
+      cursor: pointer;
+      font-size: .9rem;
+      font-weight: 400;
+      transition: 120ms ease;
+    }
+
+    .btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+    }
+
+    .btn:disabled {
+      cursor: not-allowed;
+      opacity: .42;
+    }
+
+    .btn-primary {
+      background: var(--pink);
+      border-color: var(--pink);
+      color: #fff;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: var(--pink-dark);
+      border-color: var(--pink-dark);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--text);
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      border-color: var(--pink-light);
+      background: rgba(255,255,255,.45);
+    }
+
+    .back-map {
+      margin-top: auto;
+      padding-top: 11px;
+    }
+
+    .back-btn {
+      border: 0;
+      background: transparent;
+      color: var(--pink-dark);
+      cursor: pointer;
+      padding: 7px 0;
+      font-size: .9rem;
+      font-style: italic;
+      font-weight: 400;
+    }
+
+    .back-btn:hover {
+      text-decoration: underline;
+      text-underline-offset: 4px;
+    }
+
+    footer {
+      text-align: center;
+      color: #9d9594;
+      font-size: .72rem;
+      font-style: italic;
+      line-height: 1;
+    }
+
+    @media (min-width: 821px) and (max-height: 760px) {
+      .page {
+        padding-top: 10px;
+        gap: 7px;
+      }
+
+      .brand {
+        font-size: clamp(2rem, 4vw, 3rem);
+      }
+
+      .tagline {
+        margin-top: 4px;
+        font-size: .9rem;
+      }
+
+      .prompt {
+        margin-top: 6px;
+        font-size: .78rem;
+      }
+
+      .body-view {
+        min-height: 280px;
+        max-height: 430px;
+      }
+
+      .stretch-panel {
+        padding-top: 12px;
+      }
+
+      .rule {
+        margin: 10px 0 12px;
+      }
+
+      .instruction {
+        margin: 8px 0 9px;
+        font-size: .89rem;
+      }
+
+      .timer-section {
+        margin: 12px 0 10px;
+        padding-bottom: 11px;
+      }
+
+      .timer {
+        font-size: 3.8rem;
+      }
+
+      .btn {
+        min-height: 35px;
+        padding: 6px 12px;
+      }
+
+      .back-map {
+        padding-top: 6px;
+      }
+    }
+
+    @media (max-width: 820px) {
+      body {
+        overflow: auto;
+      }
+
+      .page {
+        width: min(100% - 20px, 650px);
+        height: auto;
+        min-height: 100dvh;
+        padding: 24px 0 18px;
+        display: block;
+      }
+
+      header {
+        margin-bottom: 18px;
+      }
+
+      .app-shell,
+      .app-shell.has-selection {
+        display: block;
+      }
+
+      .body-panel {
+        min-height: 440px;
+      }
+
+      .body-view {
+        height: 370px;
+        min-height: 370px;
+      }
+
+      .stretch-panel {
+        padding: 28px 0 0;
+        margin-top: 22px;
+        border-left: 0;
+        border-top: 1px solid var(--line);
+        overflow: visible;
+      }
+
+      .timer-section {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+
+      .timer-meta {
+        text-align: center;
+      }
+
+      .completion-message {
+        justify-content: center;
+      }
+
+      footer {
+        padding-top: 18px;
+      }
+    }
+
+    @media (max-width: 500px) {
+      .body-panel {
+        min-height: 405px;
+      }
+
+      .body-view {
+        height: 335px;
+        min-height: 335px;
+      }
+
+      .timer-controls {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .timer-controls .btn:last-child {
+        grid-column: 1 / -1;
+      }
+
+      .stretch-topline {
+        flex-direction: column;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        transition-duration: .01ms !important;
+      }
+    }
+  
+    /* Elegant ballet-inspired figure overrides */
+    .mannequin-part {
+      fill: #f7ecec;
+      stroke: #aa9294;
+      stroke-width: 2.05;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .mannequin-joint {
+      fill: #fdf8f6;
+      stroke: #c1aeb0;
+      stroke-width: 1.6;
+    }
+    .mannequin-guide {
+      fill: none;
+      stroke: #dfd1d1;
+      stroke-width: 1.1;
+      stroke-linecap: round;
+    }
+    .mannequin-back-detail {
+      fill: none;
+      stroke: #d7c7c8;
+      stroke-width: 1.2;
+      stroke-linecap: round;
+      stroke-dasharray: 3 5;
+    }
+    .dancer-accent {
+      fill: #f0dfdf;
+      stroke: #ad9496;
+      stroke-width: 1.9;
+      stroke-linejoin: round;
+    }
+    .dancer-line {
+      fill: none;
+      stroke: #aa9294;
+      stroke-width: 2.05;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .dancer-soft-line {
+      fill: none;
+      stroke: #d2bfc0;
+      stroke-width: 1.25;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+  
+    /* Sketch mannequin overrides */
+    .mannequin-part {
+      fill: #f3efef;
+      stroke: #9b9191;
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .mannequin-joint {
+      fill: #f7f3f3;
+      stroke: #979090;
+      stroke-width: 2.2;
+    }
+    .mannequin-guide {
+      fill: none;
+      stroke: #cfc7c7;
+      stroke-width: 1.15;
+      stroke-linecap: round;
+    }
+    .mannequin-back-detail {
+      fill: none;
+      stroke: #c9c1c1;
+      stroke-width: 1.15;
+      stroke-linecap: round;
+      stroke-dasharray: 3 5;
+    }
+    .dancer-accent,
+    .dancer-line,
+    .dancer-soft-line {
+      all: unset;
+    }
+
+  
+    /* Typography: Cormorant Garamond */
+    html, body, button, input, textarea, select,
+    .brand, .tagline, .prompt, .view-btn, .selection-hint,
+    .eyebrow, .area-title, .progress-pill, .stretch-name,
+    .instruction, .duration-label, .timer-caption, .timer,
+    .seconds, .completion-message, .btn, .back-btn, footer,
+    .hotspot .label-text {
+      font-family: "Cormorant Garamond", serif !important;
+    }
+
+    body {
+      font-size: 18px;
+      font-weight: 500;
+      letter-spacing: 0;
+    }
+
+    .brand {
+      font-family: "Cormorant Garamond", serif !important;
+      font-size: clamp(3rem, 5.4vw, 4.8rem);
+      font-weight: 600;
+      letter-spacing: -0.045em;
+    }
+
+    .tagline {
+      font-size: 1.1rem;
+      font-weight: 400;
+      font-style: italic;
+    }
+
+    .prompt,
+    .view-btn,
+    .selection-hint {
+      font-size: 0.95rem;
+      font-weight: 500;
+    }
+
+    .area-title,
+    .stretch-name {
+      font-weight: 600;
+      letter-spacing: -0.03em;
+    }
+
+    .area-title {
+      font-size: clamp(2rem, 3vw, 2.65rem);
+    }
+
+    .stretch-name {
+      font-size: clamp(1.9rem, 3.2vw, 2.65rem);
+    }
+
+    .instruction {
+      font-size: 1.08rem;
+      font-weight: 400;
+      line-height: 1.42;
+    }
+
+    .eyebrow,
+    .progress-pill,
+    .duration-label,
+    .timer-caption,
+    .seconds,
+    .btn,
+    .back-btn {
+      font-weight: 500;
+    }
+
+    .timer {
+      font-weight: 600;
+    }
+
+    .hotspot .label-text {
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+  
+    /* Readability adjustments */
+    body {
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .brand {
+      font-weight: 700 !important;
+    }
+
+    .tagline,
+    .prompt,
+    .view-btn,
+    .selection-hint,
+    .instruction,
+    .duration-label,
+    .timer-caption,
+    .seconds,
+    footer {
+      font-weight: 500 !important;
+    }
+
+    .eyebrow,
+    .progress-pill,
+    .area-title,
+    .stretch-name,
+    .completion-message,
+    .btn,
+    .back-btn,
+    .hotspot .label-text {
+      font-weight: 600 !important;
+    }
+
+    .timer {
+      font-weight: 700 !important;
+    }
+
+    .instruction {
+      font-size: 1.12rem;
+      line-height: 1.45;
+    }
+
+    .btn {
+      font-size: 0.98rem;
+    }
+
+  
+    /* hotspot alignment fix */
+    .hotspot .pulse,
+    .hotspot .dot {
+      transform-box: fill-box;
+      transform-origin: center;
+    }
+
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header>
+      <h1 class="brand">time<span class="two">2</span>move</h1>
+      <p class="tagline">Take a break. Move your body.</p>
+      <div class="prompt">
+        <span class="prompt-dot" aria-hidden="true"></span>
+        <span id="promptText">Click a body area to begin.</span>
+      </div>
+      
+    </header>
+
+    <section class="app-shell" id="appShell" aria-label="time2move stretch guide">
+      <section class="body-panel">
+        <div class="view-switcher" role="group" aria-label="Body view">
+          <button class="view-btn active" type="button" data-view="front" aria-pressed="true">Front</button>
+          <button class="view-btn" type="button" data-view="back" aria-pressed="false">Back</button>
+        </div>
+
+        <div class="body-stage">
+          <div class="body-view active" id="frontView">
+            <svg class="body-svg" viewBox="0 0 360 520" role="img" aria-label="Front mannequin sketch body map with Neck, Shoulder, Wrist, and Front Thigh hotspots">
+              <g aria-hidden="true">
+                <!-- head -->
+                <ellipse class="mannequin-part" cx="180" cy="64" rx="33" ry="41"/>
+                <line class="mannequin-guide" x1="180" y1="27" x2="180" y2="102"/>
+                <line class="mannequin-guide" x1="168" y1="72" x2="192" y2="72"/>
+                <!-- ears -->
+                <ellipse class="mannequin-part" cx="148" cy="84" rx="7" ry="11"/>
+                <ellipse class="mannequin-part" cx="212" cy="84" rx="7" ry="11"/>
+
+                <!-- neck -->
+                <path class="mannequin-part" d="M170 103 L169 122 L191 122 L190 103 Z"/>
+
+                <!-- shoulder line -->
+                <path class="mannequin-guide" d="M132 130 L228 130"/>
+
+                <!-- shoulder joints -->
+                <circle class="mannequin-joint" cx="133" cy="144" r="18"/>
+                <circle class="mannequin-joint" cx="227" cy="144" r="18"/>
+
+                <!-- upper torso / chest block -->
+                <path class="mannequin-part" d="M154 129
+                  Q180 120 206 129
+                  Q218 151 217 186
+                  Q216 214 204 230
+                  L156 230
+                  Q144 214 143 186
+                  Q142 151 154 129 Z"/>
+                <line class="mannequin-guide" x1="180" y1="136" x2="180" y2="225"/>
+                <line class="mannequin-guide" x1="146" y1="184" x2="214" y2="184"/>
+
+                <!-- waist block -->
+                <path class="mannequin-part" d="M158 232 L202 232 L203 262 L157 262 Z"/>
+
+                <!-- pelvis -->
+                <path class="mannequin-part" d="M150 262
+                  L210 262
+                  L221 289
+                  Q204 306 180 306
+                  Q156 306 139 289 Z"/>
+
+                <!-- upper arms -->
+                <path class="mannequin-part" d="M114 153 L130 148 L124 214 L106 216 Q102 186 114 153 Z"/>
+                <path class="mannequin-part" d="M246 153 L230 148 L236 214 L254 216 Q258 186 246 153 Z"/>
+
+                <!-- elbows -->
+                <circle class="mannequin-joint" cx="111" cy="225" r="12"/>
+                <circle class="mannequin-joint" cx="249" cy="225" r="12"/>
+
+                <!-- forearms -->
+                <path class="mannequin-part" d="M101 237 L117 234 L118 303 L102 307 Q94 274 101 237 Z"/>
+                <path class="mannequin-part" d="M259 237 L243 234 L242 303 L258 307 Q266 274 259 237 Z"/>
+
+                <!-- wrists -->
+                <circle class="mannequin-joint" cx="103" cy="313" r="8"/>
+                <circle class="mannequin-joint" cx="257" cy="313" r="8"/>
+
+                <!-- hands -->
+                <path class="mannequin-part" d="M96 320 L115 327 L120 346 L108 339 L104 352 L99 338 L88 346 Z"/>
+                <path class="mannequin-part" d="M264 320 L245 327 L240 346 L252 339 L256 352 L261 338 L272 346 Z"/>
+
+                <!-- hips -->
+                <circle class="mannequin-joint" cx="150" cy="292" r="17"/>
+                <circle class="mannequin-joint" cx="210" cy="292" r="17"/>
+
+                <!-- thighs -->
+                <path class="mannequin-part" d="M142 305 L169 305 L162 406 L137 406 Z"/>
+                <path class="mannequin-part" d="M191 305 L218 305 L223 406 L198 406 Z"/>
+
+                <!-- knees -->
+                <circle class="mannequin-joint" cx="149" cy="417" r="14"/>
+                <circle class="mannequin-joint" cx="211" cy="417" r="14"/>
+
+                <!-- lower legs -->
+                <path class="mannequin-part" d="M139 430 L164 430 L159 497 L143 497 Q135 466 139 430 Z"/>
+                <path class="mannequin-part" d="M196 430 L221 430 L217 497 L201 497 Q193 466 196 430 Z"/>
+
+                <!-- ankles -->
+                <circle class="mannequin-joint" cx="151" cy="500" r="7"/>
+                <circle class="mannequin-joint" cx="209" cy="500" r="7"/>
+
+                <!-- feet -->
+                <path class="mannequin-part" d="M146 505 L164 505 L171 518 L133 518 Z"/>
+                <path class="mannequin-part" d="M214 505 L196 505 L189 518 L227 518 Z"/>
+              </g>
+
+              <g class="hotspot" tabindex="0" role="button" aria-label="Neck" data-area="Neck">
+                <circle class="pulse" cx="180" cy="115" r="14"/>
+                <circle class="dot" cx="180" cy="115" r="6.5"/>
+                <rect class="label-box" x="146" y="81" width="68" height="25" rx="12"/>
+                <text class="label-text" x="180" y="98">Neck</text>
+              </g>
+
+              <g class="hotspot" tabindex="0" role="button" aria-label="Shoulder" data-area="Shoulder">
+                <circle class="pulse" cx="133" cy="144" r="14"/>
+                <circle class="dot" cx="133" cy="144" r="6.5"/>
+                <rect class="label-box" x="92" y="110" width="82" height="25" rx="12"/>
+                <text class="label-text" x="133" y="127">Shoulder</text>
+              </g>
+
+              <g class="hotspot" tabindex="0" role="button" aria-label="Wrist" data-area="Wrist">
+                <circle class="pulse" cx="103" cy="313" r="14"/>
+                <circle class="dot" cx="103" cy="313" r="6.5"/>
+                <rect class="label-box" x="70" y="279" width="66" height="25" rx="12"/>
+                <text class="label-text" x="103" y="296">Wrist</text>
+              </g>
+
+              <g class="hotspot" tabindex="0" role="button" aria-label="Front Thigh" data-area="Front Thigh">
+                <circle class="pulse" cx="150" cy="355" r="14"/>
+                <circle class="dot" cx="150" cy="355" r="6.5"/>
+                <rect class="label-box" x="98" y="321" width="104" height="25" rx="12"/>
+                <text class="label-text" x="150" y="338">Front Thigh</text>
+              </g>
+            </svg>
+          </div>
+
+          <div class="body-view" id="backView">
+            <svg class="body-svg" viewBox="0 0 360 520" role="img" aria-label="Back mannequin sketch body map with Back, Lower Back, Back Thigh, and Calf hotspots">
+              <g aria-hidden="true">
+                <!-- head -->
+                <ellipse class="mannequin-part" cx="180" cy="64" rx="33" ry="41"/>
+                <line class="mannequin-guide" x1="180" y1="27" x2="180" y2="102"/>
+                <ellipse class="mannequin-part" cx="148" cy="84" rx="7" ry="11"/>
+                <ellipse class="mannequin-part" cx="212" cy="84" rx="7" ry="11"/>
+
+                <!-- neck -->
+                <path class="mannequin-part" d="M170 103 L169 122 L191 122 L190 103 Z"/>
+
+                <path class="mannequin-guide" d="M132 130 L228 130"/>
+
+                <circle class="mannequin-joint" cx="133" cy="144" r="18"/>
+                <circle class="mannequin-joint" cx="227" cy="144" r="18"/>
+
+                <!-- back torso -->
+                <path class="mannequin-part" d="M154 129
+                  Q180 120 206 129
+                  Q218 151 217 186
+                  Q216 214 204 230
+                  L156 230
+                  Q144 214 143 186
+                  Q142 151 154 129 Z"/>
+                <line class="mannequin-back-detail" x1="180" y1="136" x2="180" y2="225"/>
+                <path class="mannequin-back-detail" d="M160 154 Q170 166 174 178"/>
+                <path class="mannequin-back-detail" d="M200 154 Q190 166 186 178"/>
+
+                <!-- waist block -->
+                <path class="mannequin-part" d="M158 232 L202 232 L203 262 L157 262 Z"/>
+
+                <!-- pelvis -->
+                <path class="mannequin-part" d="M150 262
+                  L210 262
+                  L221 289
+                  Q204 306 180 306
+                  Q156 306 139 289 Z"/>
+
+                <!-- upper arms -->
+                <path class="mannequin-part" d="M114 153 L130 148 L124 214 L106 216 Q102 186 114 153 Z"/>
+                <path class="mannequin-part" d="M246 153 L230 148 L236 214 L254 216 Q258 186 246 153 Z"/>
+
+                <circle class="mannequin-joint" cx="111" cy="225" r="12"/>
+                <circle class="mannequin-joint" cx="249" cy="225" r="12"/>
+
+                <!-- forearms -->
+                <path class="mannequin-part" d="M101 237 L117 234 L118 303 L102 307 Q94 274 101 237 Z"/>
+                <path class="mannequin-part" d="M259 237 L243 234 L242 303 L258 307 Q266 274 259 237 Z"/>
+
+                <circle class="mannequin-joint" cx="103" cy="313" r="8"/>
+                <circle class="mannequin-joint" cx="257" cy="313" r="8"/>
+
+                <!-- hands -->
+                <path class="mannequin-part" d="M96 320 L115 327 L120 346 L108 339 L104 352 L99 338 L88 346 Z"/>
+                <path class="mannequin-part" d="M264 320 L245 327 L240 346 L252 339 L256 352 L261 338 L272 346 Z"/>
+
+                <!-- hips -->
+                <circle class="mannequin-joint" cx="150" cy="292" r="17"/>
+                <circle class="mannequin-joint" cx="210" cy="292" r="17"/>
+
+                <!-- thighs -->
+                <path class="mannequin-part" d="M142 305 L169 305 L162 406 L137 406 Z"/>
+                <path class="mannequin-part" d="M191 305 L218 305 L223 406 L198 406 Z"/>
+
+                <circle class="mannequin-joint" cx="149" cy="417" r="14"/>
+                <circle class="mannequin-joint" cx="211" cy="417" r="14"/>
+
+                <!-- lower legs -->
+                <path class="mannequin-part" d="M139 430 L164 430 L159 497 L143 497 Q135 466 139 430 Z"/>
+                <path class="mannequin-part" d="M196 430 L221 430 L217 497 L201 497 Q193 466 196 430 Z"/>
+
+                <circle class="mannequin-joint" cx="151" cy="500" r="7"/>
+                <circle class="mannequin-joint" cx="209" cy="500" r="7"/>
+
+                <!-- feet -->
+                <path class="mannequin-part" d="M146 505 L164 505 L171 518 L133 518 Z"/>
+                <path class="mannequin-part" d="M214 505 L196 505 L189 518 L227 518 Z"/>
+              </g>
+
+              <g class="hotspot" tabindex="0" role="button" aria-label="Upper Back" data-area="Upper Back">
+                <circle class="pulse" cx="180" cy="183" r="16"/>
+                <circle class="dot" cx="180" cy="183" r="7.5"/>
+                <rect class="label-box" x="135" y="149" width="90" height="25" rx="12"/>
+                <text class="label-text" x="180" y="166">Upper Back</text>
+              </g>
+
+              <g class="hotspot" tabindex="0" role="button" aria-label="Lower Back" data-area="Lower Back">
+                <circle class="pulse" cx="180" cy="248" r="14"/>
+                <circle class="dot" cx="180" cy="248" r="6.5"/>
+                <rect class="label-box" x="132" y="214" width="96" height="25" rx="12"/>
+                <text class="label-text" x="180" y="231">Lower Back</text>
+              </g>
+
+              <g class="hotspot" tabindex="0" role="button" aria-label="Back Thigh" data-area="Back Thigh">
+                <circle class="pulse" cx="210" cy="355" r="14"/>
+                <circle class="dot" cx="210" cy="355" r="6.5"/>
+                <rect class="label-box" x="164" y="321" width="92" height="25" rx="12"/>
+                <text class="label-text" x="210" y="338">Back Thigh</text>
+              </g>
+
+              <g class="hotspot" tabindex="0" role="button" aria-label="Calf" data-area="Calf">
+                <circle class="pulse" cx="208" cy="462" r="14"/>
+                <circle class="dot" cx="208" cy="462" r="6.5"/>
+                <rect class="label-box" x="179" y="428" width="58" height="25" rx="12"/>
+                <text class="label-text" x="208" y="445">Calf</text>
+              </g>
+            </svg>
+          </div>
+        </div>
+
+        
+      </section>
+
+      <section class="stretch-panel" id="stretchPanel" aria-live="polite">
+        <div class="stretch-topline">
+          <div>
+            <div class="eyebrow">Selected area</div>
+            <h2 class="area-title" id="areaTitle">Neck</h2>
+          </div>
+          <div class="progress-pill" id="progress">1 / 3</div>
+        </div>
+
+        <div class="rule"></div>
+
+        <h3 class="stretch-name" id="stretchName">Neck Side Stretch</h3>
+        <p class="instruction" id="instruction">
+          Gently tilt your head toward one shoulder and hold.
+        </p>
+
+        <div class="duration-label">
+          <span class="duration-icon" aria-hidden="true"></span>
+          <span id="durationText">20 seconds</span>
+        </div>
+
+        <div class="timer-section">
+          <div class="timer-meta">
+            <p class="timer-caption">Time remaining</p>
+            <p class="timer" id="timer" aria-label="20 seconds remaining">20</p>
+            <span class="seconds">seconds</span>
+          </div>
+          <div class="completion-message" id="completionMessage" aria-live="assertive"></div>
+        </div>
+
+        <div class="timer-controls" aria-label="Timer controls">
+          <button class="btn btn-primary" id="startBtn" type="button">Start</button>
+          <button class="btn btn-secondary" id="pauseBtn" type="button">Pause</button>
+          <button class="btn btn-secondary" id="resetBtn" type="button">Reset</button>
+        </div>
+
+        <div class="nav-controls" aria-label="Stretch navigation">
+          <button class="btn btn-secondary" id="previousBtn" type="button">Previous</button>
+          <button class="btn btn-secondary" id="nextBtn" type="button">Next</button>
+        </div>
+
+        <div class="back-map">
+          <button class="back-btn" id="backMapBtn" type="button">← Back to body map</button>
+        </div>
+      </section>
+    </section>
+
+    <footer>Small movements. Better breaks.</footer>
+  </main>
+
+  <script>
+    const stretches = {
+      Neck: [
+        {
+          area: "Neck",
+          name: "Neck Side Stretch",
+          instruction: "Gently tilt your head toward one shoulder. Keep the opposite shoulder relaxed and hold the stretch.",
+          duration: 20
+        },
+        {
+          area: "Neck",
+          name: "Neck Rotation",
+          instruction: "Slowly turn your head to one side until you feel a gentle stretch. Keep your chin level.",
+          duration: 20
+        },
+        {
+          area: "Neck",
+          name: "Chin Tuck",
+          instruction: "Sit tall and gently draw your chin straight back. Keep your head level instead of looking down.",
+          duration: 20
+        }
+      ],
+      Shoulder: [
+        {
+          area: "Shoulder",
+          name: "Cross-Body Shoulder Stretch",
+          instruction: "Bring one arm across your chest and gently pull it closer with the opposite arm. Keep your shoulders relaxed.",
+          duration: 25
+        },
+        {
+          area: "Shoulder",
+          name: "Shoulder Rolls",
+          instruction: "Lift your shoulders toward your ears, roll them back, then lower them slowly in a smooth circle.",
+          duration: 20
+        },
+        {
+          area: "Shoulder",
+          name: "Overhead Shoulder Reach",
+          instruction: "Reach both arms overhead and lengthen through your fingertips while keeping your ribs relaxed.",
+          duration: 20
+        }
+      ],
+      Wrist: [
+        {
+          area: "Wrist",
+          name: "Wrist Flexor Stretch",
+          instruction: "Extend one arm forward with your palm facing up. Gently pull your fingers downward with the other hand.",
+          duration: 20
+        },
+        {
+          area: "Wrist",
+          name: "Wrist Extensor Stretch",
+          instruction: "Extend one arm forward with your palm facing down. Gently bend the hand downward using the other hand.",
+          duration: 20
+        }
+      ],
+      "Upper Back": [
+        {
+          area: "Upper Back",
+          name: "Seated Back Reach",
+          instruction: "Sit tall, clasp your hands in front of you, and gently reach forward while rounding your upper back.",
+          duration: 25
+        },
+        {
+          area: "Upper Back",
+          name: "Seated Spinal Twist",
+          instruction: "Sit upright and rotate your torso gently to one side. Keep both hips grounded and avoid forcing the twist.",
+          duration: 25
+        },
+        {
+          area: "Upper Back",
+          name: "Standing Side Reach",
+          instruction: "Reach one arm overhead and lean gently to the opposite side. Keep your chest facing forward.",
+          duration: 30
+        }
+      ],
+      "Lower Back": [
+        {
+          area: "Lower Back",
+          name: "Knees-to-Chest Stretch",
+          instruction: "Lie on your back and gently pull one or both knees toward your chest. Keep your lower back relaxed.",
+          duration: 25
+        },
+        {
+          area: "Lower Back",
+          name: "Cat-Cow Mobilization",
+          instruction: "Move slowly between rounding and arching your back. Let the movement stay gentle and controlled.",
+          duration: 30
+        },
+        {
+          area: "Lower Back",
+          name: "Child's Pose Reach",
+          instruction: "Sit back toward your heels and reach your arms forward. Breathe into the lower back and hold.",
+          duration: 30
+        }
+      ],
+      "Front Thigh": [
+        {
+          area: "Front Thigh",
+          name: "Standing Quad Stretch",
+          instruction: "Stand tall and bring one heel toward your glutes. Hold your ankle and keep your knees close together.",
+          duration: 25
+        },
+        {
+          area: "Front Thigh",
+          name: "Half-Kneeling Quad Stretch",
+          instruction: "From a half-kneeling position, gently shift forward while keeping your torso upright to feel the front of the thigh.",
+          duration: 30
+        },
+        {
+          area: "Front Thigh",
+          name: "Couch Stretch",
+          instruction: "Place one shin near a wall or sofa and lift your chest. Ease into the stretch without forcing your lower back.",
+          duration: 30
+        }
+      ],
+      "Back Thigh": [
+        {
+          area: "Back Thigh",
+          name: "Standing Hamstring Stretch",
+          instruction: "Place one heel slightly forward, hinge at your hips, and keep your back long as you reach toward your leg.",
+          duration: 25
+        },
+        {
+          area: "Back Thigh",
+          name: "Seated Hamstring Reach",
+          instruction: "Sit with one leg extended and gently reach forward from your hips. Keep the stretch behind the thigh.",
+          duration: 30
+        },
+        {
+          area: "Back Thigh",
+          name: "Supine Hamstring Hold",
+          instruction: "Lie on your back and lift one leg. Hold behind the thigh or calf and gently draw the leg closer.",
+          duration: 30
+        }
+      ],
+      Calf: [
+        {
+          area: "Calf",
+          name: "Wall Calf Stretch",
+          instruction: "Place your hands on a wall, step one foot back, and press the heel down until you feel a stretch in the calf.",
+          duration: 25
+        },
+        {
+          area: "Calf",
+          name: "Bent-Knee Calf Stretch",
+          instruction: "From a wall stretch, slightly bend the back knee to target the lower part of the calf.",
+          duration: 25
+        },
+        {
+          area: "Calf",
+          name: "Downward Heel Drop",
+          instruction: "In a gentle downward dog or step position, let one heel sink toward the floor while keeping the movement comfortable.",
+          duration: 25
+        }
+      ]
+    };
+
+    const appShell = document.getElementById("appShell");
+    const stretchPanel = document.getElementById("stretchPanel");
+    const promptText = document.getElementById("promptText");
+
+    const areaTitle = document.getElementById("areaTitle");
+    const progress = document.getElementById("progress");
+    const stretchName = document.getElementById("stretchName");
+    const instruction = document.getElementById("instruction");
+    const durationText = document.getElementById("durationText");
+    const timerDisplay = document.getElementById("timer");
+    const completionMessage = document.getElementById("completionMessage");
+
+    const startBtn = document.getElementById("startBtn");
+    const pauseBtn = document.getElementById("pauseBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const previousBtn = document.getElementById("previousBtn");
+    const nextBtn = document.getElementById("nextBtn");
+    const backMapBtn = document.getElementById("backMapBtn");
+
+    const viewButtons = document.querySelectorAll(".view-btn");
+    const bodyViews = {
+      front: document.getElementById("frontView"),
+      back: document.getElementById("backView")
+    };
+
+    let selectedArea = null;
+    let currentIndex = 0;
+    let remainingTime = 0;
+    let timerId = null;
+
+    function stopTimer() {
+      if (timerId !== null) {
+        clearInterval(timerId);
+        timerId = null;
+      }
+      updateTimerButtons();
+    }
+
+    function setTimer(seconds) {
+      remainingTime = seconds;
+      timerDisplay.textContent = remainingTime;
+      timerDisplay.setAttribute("aria-label", `${remainingTime} seconds remaining`);
+    }
+
+    function clearCompletion() {
+      completionMessage.textContent = "";
+    }
+
+    function updateTimerButtons() {
+      const isRunning = timerId !== null;
+      startBtn.disabled = isRunning || !selectedArea || remainingTime <= 0;
+      pauseBtn.disabled = !isRunning;
+      resetBtn.disabled = !selectedArea;
+    }
+
+    function resetTimer() {
+      stopTimer();
+      if (!selectedArea) return;
+      const stretch = stretches[selectedArea][currentIndex];
+      setTimer(stretch.duration);
+      clearCompletion();
+      updateTimerButtons();
+    }
+
+    function renderStretch() {
+      if (!selectedArea) return;
+
+      stopTimer();
+      clearCompletion();
+
+      const list = stretches[selectedArea];
+      const stretch = list[currentIndex];
+
+      areaTitle.textContent = selectedArea;
+      stretchName.textContent = stretch.name;
+      instruction.textContent = stretch.instruction;
+      durationText.textContent = `${stretch.duration} seconds`;
+      progress.textContent = `${currentIndex + 1} / ${list.length}`;
+      setTimer(stretch.duration);
+
+      previousBtn.disabled = currentIndex === 0;
+      nextBtn.disabled = currentIndex === list.length - 1;
+
+      updateTimerButtons();
+    }
+
+    function selectArea(area) {
+      selectedArea = area;
+      currentIndex = 0;
+
+      document.querySelectorAll(".hotspot").forEach(hotspot => {
+        hotspot.classList.toggle("selected", hotspot.dataset.area === area);
+      });
+
+      appShell.classList.add("has-selection");
+      stretchPanel.classList.add("visible");
+      promptText.textContent = `${area} selected. Follow the stretch guide.`;
+
+      renderStretch();
+
+      if (window.innerWidth <= 820) {
+        requestAnimationFrame(() => {
+          stretchPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+      }
+    }
+
+    function goBackToBodyMap() {
+      stopTimer();
+      clearCompletion();
+      selectedArea = null;
+      currentIndex = 0;
+      setTimer(0);
+
+      document.querySelectorAll(".hotspot").forEach(hotspot => {
+        hotspot.classList.remove("selected");
+      });
+
+      appShell.classList.remove("has-selection");
+      stretchPanel.classList.remove("visible");
+      promptText.textContent = "Click a body area to begin.";
+
+      updateTimerButtons();
+    }
+
+    function startTimer() {
+      if (!selectedArea || timerId !== null || remainingTime <= 0) return;
+
+      clearCompletion();
+
+      timerId = setInterval(() => {
+        remainingTime -= 1;
+        timerDisplay.textContent = remainingTime;
+        timerDisplay.setAttribute("aria-label", `${remainingTime} seconds remaining`);
+
+        if (remainingTime <= 0) {
+          stopTimer();
+
+          const list = stretches[selectedArea];
+          const isLastStretch = currentIndex === list.length - 1;
+
+          completionMessage.textContent = isLastStretch
+            ? "Session complete!"
+            : "Stretch complete!";
+
+          updateTimerButtons();
+        }
+      }, 1000);
+
+      updateTimerButtons();
+    }
+
+    function showPrevious() {
+      if (!selectedArea || currentIndex === 0) return;
+      currentIndex -= 1;
+      renderStretch();
+    }
+
+    function showNext() {
+      if (!selectedArea) return;
+      const list = stretches[selectedArea];
+      if (currentIndex >= list.length - 1) return;
+      currentIndex += 1;
+      renderStretch();
+    }
+
+    function switchView(view) {
+      viewButtons.forEach(btn => {
+        const active = btn.dataset.view === view;
+        btn.classList.toggle("active", active);
+        btn.setAttribute("aria-pressed", active ? "true" : "false");
+      });
+
+      Object.entries(bodyViews).forEach(([key, element]) => {
+        element.classList.toggle("active", key === view);
+      });
+    }
+
+    document.querySelectorAll(".hotspot").forEach(hotspot => {
+      hotspot.addEventListener("click", () => selectArea(hotspot.dataset.area));
+      hotspot.addEventListener("keydown", event => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          selectArea(hotspot.dataset.area);
+        }
+      });
+    });
+
+    viewButtons.forEach(button => {
+      button.addEventListener("click", () => switchView(button.dataset.view));
+    });
+
+    startBtn.addEventListener("click", startTimer);
+    pauseBtn.addEventListener("click", stopTimer);
+    resetBtn.addEventListener("click", resetTimer);
+    previousBtn.addEventListener("click", showPrevious);
+    nextBtn.addEventListener("click", showNext);
+    backMapBtn.addEventListener("click", goBackToBodyMap);
+
+    updateTimerButtons();
+  </script>
+</body>
+</html>
